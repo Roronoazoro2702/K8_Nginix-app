@@ -1,0 +1,38 @@
+# Malformed template file with syntax and template errors
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment  # Valid template syntax
+  labels:
+    {{- include "mychart.labels" . | indent 4 }}  # Valid include function
+    app.kubernetes.io/instance: {{ .Release.Name }
+    # Missing closing brace
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }
+      # Missing closing brace
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag"  # Missing closing brace
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        resources:
+          {{ toYaml .Values.resources | indent 10 }}  # Incorrect indentation for function
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Unclosed template directive
+      {{- with .Values.affinity }
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,71 @@
+# Additional pods with specific image vulnerabilities
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "insecure-app.fullname" . }}-backend
+  labels:
+    {{- include "insecure-app.labels" . | nindent 4 }}
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "insecure-app.selectorLabels" . | nindent 6 }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "insecure-app.selectorLabels" . | nindent 8 }}
+        component: backend
+    spec:
+      containers:
+      # Security Issue: Using multiple outdated/vulnerable images
+      - name: backend-service
+        # Security Issue: Old Alpine with known vulnerabilities
+        image: "alpine:3.9"
+        command: ["sh", "-c", "while true; do echo Running backend; sleep 30; done"]
+      
+      - name: database
+        # Security Issue: Old Postgres with known vulnerabilities
+        image: "postgres:9.6.10"
+        env:
+          - name: POSTGRES_PASSWORD
+            value: "insecure"
+      
+      - name: cache
+        # Security Issue: Outdated Redis with vulnerabilities
+        image: "redis:4.0.10"
+      
+      - name: monitor
+        # Security Issue: Old vulnerable monitoring image
+        image: "prom/prometheus:v2.1.0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "insecure-app.fullname" . }}-frontend
+  labels:
+    {{- include "insecure-app.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "insecure-app.selectorLabels" . | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "insecure-app.selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      containers:
+      # Security Issue: Using vulnerable Node.js image
+      - name: frontend-app
+        image: "node:12.18.2-alpine"
+        command: ["sh", "-c", "while true; do echo Running frontend; sleep 30; done"]
+      
+      # Security Issue: Using a container with a malicious or unofficial image
+      - name: utility
+        image: "dockersampleuser/malicious-app:latest"
+        command: ["sh", "-c", "while true; do sleep 30; done"]

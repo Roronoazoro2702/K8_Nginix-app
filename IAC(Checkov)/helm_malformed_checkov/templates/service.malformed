@@ -1,0 +1,16 @@
+# Incorrect file extension (.malformed instead of .yaml)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-service
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - port: {{ .Values.service.port }
+    # Missing closing brace
+    targetPort: {{ .Values.service.targetPort }}
+    protocol: TCP
+  selector:
+    app: {{ .Chart.Name }}

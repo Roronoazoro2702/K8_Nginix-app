@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "insecure-app.fullname" . }}
+  labels:
+    {{- include "insecure-app.labels" . | nindent 4 }}
+data:
+  # Security Issue: Storing sensitive data in ConfigMap instead of Secret
+  database.conf: |
+    DATABASE_HOST={{ .Values.databaseConfig.host }}
+    DATABASE_PORT={{ .Values.databaseConfig.port }}
+    DATABASE_NAME={{ .Values.databaseConfig.name }}
+    # Security Issue: Credentials in ConfigMap
+    DATABASE_USER={{ .Values.databaseConfig.username }}
+    DATABASE_PASSWORD={{ .Values.databaseConfig.password }}
+  
+  # Security Issue: Container exposing debug endpoints
+  app.conf: |
+    DEBUG=true
+    ENABLE_PROFILING=true
+    EXPOSE_METRICS=true
+    ADMIN_ENDPOINT_PROTECTION=false
+    
+  # Security Issue: Overly permissive CORS configuration
+  cors.conf: |
+    ALLOW_ORIGIN=*
+    ALLOW_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
+    ALLOW_HEADERS=*
+    
+  # Security Issue: Insecure TLS configuration
+  tls.conf: |
+    TLS_VERSION=TLS1.0,TLS1.1,TLS1.2
+    ALLOW_WEAK_CIPHERS=true

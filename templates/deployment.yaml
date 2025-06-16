@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "insecure-app.fullname" . }}
+  labels:
+    {{- include "insecure-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "insecure-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "insecure-app.selectorLabels" . | nindent 8 }}
+    spec:
+      # Security Issue: No security context defined (allows running as root)
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1000
+      
+      # Security Issue: Using hostNetwork which exposes the pod directly to the node network
+      hostNetwork: true
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          # Security Issue: Using a vulnerable image without a digest for verification
+          # This allows image tampering or using different images with the same tag
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          # Security Issue: No image signature verification
+          # No cosign or notation verification is configured
+          
+          # Security Issue: Exposing sensitive ports
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: admin
+              containerPort: 8080
+              protocol: TCP
+              
+          # Security Issue: Not setting proper liveness/readiness probes
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          
+          # Security Issue: Putting secrets in environment variables
+          env:
+            - name: DB_USERNAME
+              value: "{{ .Values.databaseConfig.username }}"
+            - name: DB_PASSWORD
+              value: "{{ .Values.databaseConfig.password }}"
+            - name: DB_HOST
+              value: "{{ .Values.databaseConfig.host }}"
+            - name: DB_PORT
+              value: "{{ .Values.databaseConfig.port }}"
+            - name: DB_NAME
+              value: "{{ .Values.databaseConfig.name }}"
+            - name: API_KEY
+              value: "sk_test_51MvGDnC9TLMNXaIZr000RdwgkOB9wMv"
+          
+          # Security Issue: No resource limits, allows unlimited resource usage
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          
+          # Security Issue: Allowing privilege escalation
+          securityContext:
+            allowPrivilegeEscalation: true
+            # Security Issue: Running as root
+            runAsUser: 0
+            # Security Issue: Adding dangerous capabilities
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - NET_ADMIN
+                - NET_RAW
+          
+          # Security Issue: Mounting sensitive host paths
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+            - name: host-fs
+              mountPath: /host-root
+      
+      # Security Issue: Mounting sensitive host paths
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: host-fs
+          hostPath:
+            path: /

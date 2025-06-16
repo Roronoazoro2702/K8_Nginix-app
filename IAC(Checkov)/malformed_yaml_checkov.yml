@@ -1,0 +1,66 @@
+# This is a malformed YAML file that would cause Checkov parsing errors
+# Save this as "malformed-infrastructure.yaml"
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-service
+  labels:
+    app: web-app
+    tier: frontend
+    # Incorrect indentation below
+   environment: production
+
+# Missing colon after spec
+spec
+  selector:
+    app: web-app
+  # Incorrect indentation and missing dash for list item
+  ports:
+  containerPort: 80
+    protocol: TCP
+  # Unbalanced quotes
+  loadBalancerIP: "192.168.1.100
+  
+  # Improper nesting
+    type: LoadBalancer
+
+# Improper tab/space mixing below (note: this won't be visible in the text)
+	securityContext:
+  	runAsUser: 1000
+    runAsGroup: 1000
+
+# Incomplete block
+resources:
+  limits
+    cpu: 500m
+    memory: 512Mi
+
+# Invalid YAML tag
+!!invalid: tag
+
+# Improper multi-line string
+description: >
+  This is a multi-line string
+ with improper indentation
+   which breaks YAML syntax
+
+# Missing proper list format
+environments
+  - dev
+  production
+  - staging:
+
+# Unquoted string with special characters
+password: Pa$$word@123!
+
+# Invalid anchors and aliases
+reference: &anchor
+  key1: value1
+  key2: value2
+invalid_reference: *missing_anchor
+
+# Abrupt end of mapping
+volumes:
+  - name: data-volume
+    persistentVolumeClaim:

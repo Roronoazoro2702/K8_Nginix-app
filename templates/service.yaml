@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "insecure-app.fullname" . }}
+  labels:
+    {{- include "insecure-app.labels" . | nindent 4 }}
+  annotations:
+    # Security Issue: Exposing service externally
+    cloud.provider.com/public-ip: "true"
+spec:
+  # Security Issue: Using LoadBalancer type to expose service publicly
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    # Security Issue: Exposing admin port to the public
+    - port: 8080
+      targetPort: admin
+      protocol: TCP
+      name: admin
+  selector:
+    {{- include "insecure-app.selectorLabels" . | nindent 4 }}

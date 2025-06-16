@@ -1,0 +1,73 @@
+# Default values for insecure-app
+
+replicaCount: 1
+
+image:
+  # Security Issue 1: Using "latest" tag rather than pinning version
+  repository: nginx
+  tag: latest
+  pullPolicy: Always
+  
+  # Security Issue 2: Alternative vulnerable images that could be used
+  # The following are examples of images with known vulnerabilities
+  # Uncomment to use instead of the default
+  
+  # Old Node.js image with vulnerabilities
+  # repository: node
+  # tag: 14.0.0-alpine
+  
+  # Outdated Redis with known CVEs
+  # repository: redis
+  # tag: 5.0.5
+  
+  # Very old Ubuntu base image
+  # repository: ubuntu
+  # tag: 16.04
+
+# Security Issue: No resource limits defined by default
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Security Issue: Not restricting service access
+service:
+  type: LoadBalancer
+  port: 80
+
+# Security Issue: Exposing admin dashboard publicly
+adminDashboard:
+  enabled: true
+  path: /admin
+  annotations:
+    nginx.ingress.kubernetes.io/whitelist-source-range: 0.0.0.0/0
+
+# Security Issue: Hardcoded secrets
+databaseConfig:
+  username: admin
+  password: insecure-password-123
+  host: mysql.default.svc.cluster.local
+  port: 3306
+  name: app_database
+
+# Security Issue: RBAC configuration with excessive permissions
+rbac:
+  create: true
+  # Gives app full cluster access
+  clusterWide: true
+  rules:
+    - apiGroups: ["*"]
+      resources: ["*"]
+      verbs: ["*"]
+
+# Security Issue: Not enforcing network policies
+networkPolicy:
+  enabled: false
+
+# Security Issue: Not enabling pod security context
+securityContext: {}
+  # runAsNonRoot: true
+  # runAsUser: 1000

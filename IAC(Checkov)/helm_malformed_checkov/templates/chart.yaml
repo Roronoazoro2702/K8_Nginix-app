@@ -1,0 +1,19 @@
+# Malformed Chart.yaml with incorrect structure and syntax errors
+apiVersion: v2
+# Missing required name field
+version: incomplete-version
+# Malformed array without proper syntax
+dependencies
+  - name: nginx
+    version; "1.0.0"  # Semicolon instead of colon
+    repository: "https://charts.bitnami.com/bitnami
+    # Missing closing quote
+  - name: redis
+  version: "6.0.0"  # Incorrect indentation
+# Invalid YAML character
+invalid-char: ^^^^
+description: >
+  This is a malformed description
+ with improper indentation
+# Inconsistent boolean format
+deprecated: Yes  # Should be true/false
