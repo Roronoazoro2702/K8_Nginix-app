@@ -1,0 +1,139 @@
+---
+# GKE Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gcp-vulnerable-namespace
+  labels:
+    name: gcp-vulnerable
+---
+# GKE Deployment with security issues
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulnerable-gcp-app
+  namespace: gcp-vulnerable-namespace
+  labels:
+    app: vulnerable-gcp-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vulnerable-gcp-app
+  template:
+    metadata:
+      labels:
+        app: vulnerable-gcp-app
+    spec:
+      # Security issue: No securityContext at pod level
+      containers:
+      - name: vulnerable-app
+        image: gcr.io/my-project/app:latest  # Security issue: Using latest tag
+        imagePullPolicy: Always
+        
+        # Security issue: Privileged container
+        securityContext:
+          privileged: true
+          runAsUser: 0  # Security issue: Running as root
+          allowPrivilegeEscalation: true
+          
+        # Security issue: No resource limits defined
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          # Missing limits
+          
+        # Security issue: Exposing sensitive ports
+        ports:
+        - containerPort: 80
+        - containerPort: 22  # SSH port
+        
+        # Security issue: Mounting sensitive host paths
+        volumeMounts:
+        - name: host-path
+          mountPath: /host
+        
+        # Security issue: Hardcoded credentials in environment variables
+        env:
+        - name: GCP_API_KEY
+          value: "AIzaSyC2MwMvNvWxhQ5ictTu0OM2ZIg_gg4_JxQ"
+        - name: DB_PASSWORD
+          value: "super-secret-password"
+          
+        # Security issue: No liveness or readiness probes
+      
+      # Security issue: Mounting host filesystem
+      volumes:
+      - name: host-path
+        hostPath:
+          path: /
+---
+# GKE Service exposing the deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: vulnerable-gcp-service
+  namespace: gcp-vulnerable-namespace
+spec:
+  type: LoadBalancer  # Security issue: Exposing directly to internet
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 22  # Security issue: Exposing SSH port
+    targetPort: 22
+    name: ssh
+  selector:
+    app: vulnerable-gcp-app
+---
+# GKE ConfigMap with sensitive data
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vulnerable-gcp-config
+  namespace: gcp-vulnerable-namespace
+data:
+  # Security issue: Sensitive data in ConfigMap
+  api.key: "AIzaSyC2MwMvNvWxhQ5ictTu0OM2ZIg_gg4_JxQ"
+  credentials.json: |
+    {
+      "type": "service_account",
+      "project_id": "my-project",
+      "private_key_id": "1234567890abcdef",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCtQM1S3xRx3JFT\n-----END PRIVATE KEY-----\n",
+      "client_email": "service-account@my-project.iam.gserviceaccount.com",
+      "client_id": "123456789012345678901",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token"
+    }
+---
+# GKE RBAC with excessive permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vulnerable-gcp-admin-role
+rules:
+- apiGroups: ["*"]  # Security issue: Wildcard API group
+  resources: ["*"]  # Security issue: Wildcard resources
+  verbs: ["*"]      # Security issue: Wildcard verbs
+---
+# GKE Role Binding with security issues
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vulnerable-gcp-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: default  # Security issue: Using default service account
+  namespace: gcp-vulnerable-namespace
+roleRef:
+  kind: ClusterRole
+  name: vulnerable-gcp-admin-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# GKE Network Policy (missing - security issue)
+# A Network Policy should be defined to restrict traffic
+
+# GKE PodSecurityPolicy (missing - security issue)
+# A PodSecurityPolicy should be defined to enforce security settings
